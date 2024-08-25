@@ -1,21 +1,25 @@
 package Hilos;
 
+import Interfaz.Banco;
+
 import javax.swing.*;
 import java.util.concurrent.TimeUnit;
 
 public class Cronometro extends SwingWorker<Void, Void> {
     private final JLabel labelCaja;
-    private final int tiempoAtencion; // Tiempo en segundos
-    private final int tiempoDescanso; // Tiempo en segundos
+    private final int tiempoAtencion;
+    private final int tiempoDescanso;
     private int tiempoRestante;
     private boolean enDescanso;
+    private final Banco banco;
 
-    public Cronometro(JLabel labelCaja, int tiempoAtencion, int tiempoDescanso) {
+    public Cronometro(JLabel labelCaja, int tiempoAtencion, int tiempoDescanso, Banco banco) {
         this.labelCaja = labelCaja;
         this.tiempoAtencion = tiempoAtencion;
         this.tiempoDescanso = tiempoDescanso;
         this.tiempoRestante = tiempoAtencion; // Inicia con el tiempo de atención
         this.enDescanso = false; // Inicialmente no está en descanso
+        this.banco = banco;
     }
 
     @Override
@@ -26,6 +30,9 @@ public class Cronometro extends SwingWorker<Void, Void> {
                 String estado = enDescanso ? "Descansando" : "Atendiendo";
                 labelCaja.setText(String.format("%s\nTiempo Restante: %d s", estado, tiempoRestante));
             });
+
+            // Actualiza el tiempo restante para los clientes
+            banco.actualizarTiempoClientes();
 
             // Espera 1 segundo antes de la siguiente actualización
             TimeUnit.SECONDS.sleep(1);
