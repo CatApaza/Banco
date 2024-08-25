@@ -5,6 +5,8 @@ import Hilos.Hilo1;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,16 +24,43 @@ public class Banco extends JFrame {
     private static final int TIEMPO_MINIMO_CLIENTE = 60; // 1 minuto = 60 segundos
     private static final int TIEMPO_MAXIMO_CLIENTE = 240; // 4 minutos = 240 segundos
 
+    private Cronometro cronometroCaja1;
+    private Cronometro cronometroCaja2;
+
+    private boolean cajasAbiertas = false;
+
     public Banco() {
         // Configurar la ventana principal
         setTitle("Interfaz");
-        setSize(700, 400);
+        setSize(1000, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null); // Centrar la ventana en la pantalla
 
         // Crear un panel principal con un diseño de caja
         JPanel panelPrincipal = new JPanel();
         panelPrincipal.setLayout(new BorderLayout());
+
+        // Crear un panel para los botones
+        JPanel panelBotones = new JPanel();
+        panelBotones.setLayout(new FlowLayout(FlowLayout.RIGHT));
+
+        // Crear el botón "Abrir Caja"
+        JButton botonAbrirCaja = new JButton("Abrir Caja");
+        botonAbrirCaja.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (cajasAbiertas) {
+                    cerrarCajas();
+                    botonAbrirCaja.setText("Abrir Caja");
+                } else {
+                    abrirCajas();
+                    botonAbrirCaja.setText("Cerrar Caja");
+                }
+                cajasAbiertas = !cajasAbiertas;
+            }
+        });
+
+        panelBotones.add(botonAbrirCaja);
 
         // Crear un panel para los rectángulos (cajas)
         JPanel panelRectangulos = new JPanel();
@@ -41,12 +70,12 @@ public class Banco extends JFrame {
         // Crear y agregar los rectángulos
         JPanel caja1 = new JPanel();
         caja1.setBackground(Color.RED);
-        caja1.setPreferredSize(new Dimension(120, 50)); // Tamaño reducido
+        caja1.setPreferredSize(new Dimension(150, 50)); // Tamaño ajustado
         caja1.setBorder(BorderFactory.createTitledBorder("Caja 1"));
 
         JPanel caja2 = new JPanel();
         caja2.setBackground(Color.BLUE);
-        caja2.setPreferredSize(new Dimension(120, 50)); // Tamaño reducido
+        caja2.setPreferredSize(new Dimension(150, 50)); // Tamaño ajustado
         caja2.setBorder(BorderFactory.createTitledBorder("Caja 2"));
 
         // Etiquetas para mostrar el estado de cada caja
@@ -64,10 +93,8 @@ public class Banco extends JFrame {
         JPanel panelCirculos = new JPanel();
         panelCirculos.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.CENTER; // Centrar los círculos
-        gbc.insets = new Insets(5, 5, 5, 5); // Espacio alrededor de cada círculo
+        gbc.insets = new Insets(20, 20, 20, 20); // Espacio alrededor de cada círculo
 
         // Crear y agregar los círculos (clientes) con tiempos aleatorios en segundos
         Clientes cliente1 = new Clientes("E", TIEMPO_MINIMO_CLIENTE, TIEMPO_MAXIMO_CLIENTE);
@@ -89,19 +116,35 @@ public class Banco extends JFrame {
         gbc.gridx = 4; panelCirculos.add(cliente5, gbc);
 
         // Agregar los paneles al panel principal
+        panelPrincipal.add(panelBotones, BorderLayout.NORTH); // Panel de botones en la parte superior
         panelPrincipal.add(panelRectangulos, BorderLayout.WEST); // Panel de rectángulos a la izquierda
         panelPrincipal.add(panelCirculos, BorderLayout.CENTER); // Panel de círculos en el centro
 
         // Agregar el panel principal a la ventana
         add(panelPrincipal);
 
-        // Iniciar los hilos para simular el tiempo de atención y descanso en segundos
-        new Thread(new Hilo1("Caja 1", TIEMPO_ATENCION_CAJERO1, TIEMPO_DESCANSO_CAJERO1, labelCaja1)).start();
-        new Thread(new Hilo1("Caja 2", TIEMPO_ATENCION_CAJERO2, TIEMPO_DESCANSO_CAJERO2, labelCaja2)).start();
+        // Inicializar los cronómetros para las cajas
+        cronometroCaja1 = new Cronometro(labelCaja1, TIEMPO_ATENCION_CAJERO1, TIEMPO_DESCANSO_CAJERO1, this);
+        cronometroCaja2 = new Cronometro(labelCaja2, TIEMPO_ATENCION_CAJERO2, TIEMPO_DESCANSO_CAJERO2, this);
+    }
 
-        // Iniciar los cronómetros para las cajas
-        new Cronometro(labelCaja1, TIEMPO_ATENCION_CAJERO1, TIEMPO_DESCANSO_CAJERO1).execute();
-        new Cronometro(labelCaja2, TIEMPO_ATENCION_CAJERO2, TIEMPO_DESCANSO_CAJERO2).execute();
+    // Método para abrir las cajas
+    private void abrirCajas() {
+        cronometroCaja1.execute();
+        cronometroCaja2.execute();
+    }
+
+    // Método para cerrar las cajas
+    private void cerrarCajas() {
+        cronometroCaja1.cancel(true);
+        cronometroCaja2.cancel(true);
+    }
+
+    // Método para actualizar el tiempo restante en los clientes
+    public void actualizarTiempoClientes() {
+        for (Clientes cliente : clientes) {
+            cliente.actualizarTiempo(cliente.getTiempoAtencion());
+        }
     }
 
     public static void main(String[] args) {
